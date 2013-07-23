@@ -35,6 +35,8 @@
             <tag name="doctrine_phpcr.event_listener" event="postLoad" />
             <tag name="doctrine_phpcr.event_listener" event="prePersist" />
             <tag name="doctrine_phpcr.event_listener" event="preUpdate" />
+            <tag name="doctrine_phpcr.event_listener" event="preFlush" />
+            <tag name="doctrine_phpcr.event_listener" event="postFlush" />
         </service>
 
 
