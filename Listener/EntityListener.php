@@ -81,38 +81,40 @@ class EntityListener
 
         $classMetadata = $classHierarchyMetadata->classMetadata[get_class($entity)];
 
-        foreach ($classMetadata->propertyMetadata as $propertyMetadata) {
+        foreach ($classHierarchyMetadata->classMetadata as $classMetadata) {
+            foreach ($classMetadata->propertyMetadata as $propertyMetadata) {
 
-            /* @var $propertyMetadata \Netvlies\Bundle\DoctrineBridgeBundle\Mapping\PropertyMetadata */
-            $reference = null;
+                /* @var $propertyMetadata \Netvlies\Bundle\DoctrineBridgeBundle\Mapping\PropertyMetadata */
+                $reference = null;
 
-            if ($propertyMetadata->type === 'odm') {
-                $dm = $this->doctrine->getManager($propertyMetadata->targetManager);
+                if ($propertyMetadata->type === 'odm') {
+                    $dm = $this->doctrine->getManager($propertyMetadata->targetManager);
 
-                list($namespaceAlias, $simpleClassName) = explode(':', $propertyMetadata->targetObject);
-                $realClassName = $dm->getConfiguration()->getDocumentNamespace($namespaceAlias).'\\'.$simpleClassName;
+                    list($namespaceAlias, $simpleClassName) = explode(':', $propertyMetadata->targetObject);
+                    $realClassName = $dm->getConfiguration()->getDocumentNamespace($namespaceAlias).'\\'.$simpleClassName;
 
-                /** @var ClassMetadata $documentMetaData */
-                $documentMetaData = $dm->getClassMetadata($realClassName);
-                $value            = $propertyMetadata->getValue($entity);
+                    /** @var ClassMetadata $documentMetaData */
+                    $documentMetaData = $dm->getClassMetadata($realClassName);
+                    $value            = $propertyMetadata->getValue($entity);
 
-                if (empty($value)) {
+                    if (empty($value)) {
+                        continue;
+                    }
+
+                    // This means we only have support for simple relations pointing to one id.
+                    $ids = unserialize($value);
+                    if (is_array($ids) && !empty($ids)) {
+                        $id  = array_shift($ids);
+
+                        $reference = $dm->getReference($realClassName, $id);
+                    }
+                } else {
                     continue;
                 }
 
-                // This means we only have support for simple relations pointing to one id.
-                $ids = unserialize($value);
-                if (is_array($ids) && !empty($ids)) {
-                    $id  = array_shift($ids);
-
-                    $reference = $dm->getReference($realClassName, $id);
+                if (!is_null($reference)) {
+                    $propertyMetadata->setValue($entity, $reference);
                 }
-            } else {
-                continue;
-            }
-
-            if (!is_null($reference)) {
-                $propertyMetadata->setValue($entity, $reference);
             }
         }
     }
